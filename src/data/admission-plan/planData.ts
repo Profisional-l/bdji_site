@@ -24,6 +24,8 @@ const dataSourcePhyz = [
     paid2023: '254',
     budget2024: '343',
     paid2024: '287',
+    budget2025: '371',
+    paid2025: '302',
   },
 ];
 
@@ -49,6 +51,8 @@ const dataSourceMath = [
     paid2023: '285',
     budget2024: '356',
     paid2024: '295',
+    budget2025: '367',
+    paid2025: '317',
   },
 ];
 
@@ -74,6 +78,8 @@ const dataSource = [
     paid2023: '301',
     budget2024: '-',
     paid2024: '334',
+    budget2025: '-',
+    paid2025: '353',
   },
 ];
 
