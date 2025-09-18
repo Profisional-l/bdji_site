@@ -76,11 +76,23 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
                                     )
                                 )}
                         </div>
-
                         <div className="space-y-4">
-                            {newsItem.text.map((paragraph, index) => (
-                                <p key={index}>{paragraph}</p>
-                            ))}
+                            {newsItem.text.map((paragraph, index) =>
+                                typeof paragraph === 'string' ? (
+                                    <p key={index}>{paragraph}</p>
+                                ) : (
+                                    <p key={index}>
+                                        <a
+                                            href={paragraph.url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="text-blue-600 underline hover:text-blue-800"
+                                        >
+                                            {paragraph.text}
+                                        </a>
+                                    </p>
+                                )
+                            )}
                         </div>
                     </div>
                 </div>
