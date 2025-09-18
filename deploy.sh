@@ -47,9 +47,9 @@ docker info >/dev/null || { echo "❌ Docker не запущен!"; exit 1; }
 # Запуск контейнеров
 if [[ "$MODE" == "clean" ]]; then
   echo ">>> Пересборка контейнеров с нуля..."
-  docker-compose down --remove-orphans
-  docker-compose build --no-cache --progress=plain
-  docker-compose up -d
+  docker compose down --remove-orphans
+  docker compose build --no-cache --progress=plain
+  docker compose up -d
 else
   echo ">>> Быстрый деплой (с кэшем)..."
   docker compose down --remove-orphans
