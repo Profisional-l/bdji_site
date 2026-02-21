@@ -24,6 +24,11 @@ const MainNews: MainPageNewsType[] = [
     date: '02.04.2025',
     href: '/news/8',
   },
+      {
+    title: 'Сегодня первый день Китайского Нового Года! 🐎',
+    date: '17.02.2025',
+    href: '/news/16',
+  }
 ];
 
 export default MainNews.reverse();

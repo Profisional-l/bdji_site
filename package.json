@@ -4,21 +4,24 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
+    "dev:local": "powershell -ExecutionPolicy Bypass -File ./scripts/local-dev.ps1",
+    "dev:local:bot": "powershell -ExecutionPolicy Bypass -File ./scripts/local-dev.ps1 -WithBot",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "bot:news": "node scripts/telegram-news-bot.cjs"
   },
   "dependencies": {
     "@pbe/react-yandex-maps": "^1.2.5",
     "antd": "^5.23.4",
     "framer-motion": "^12.15.0",
-    "next": "15.1.12",
+    "next": "^15.5.12",
     "next-sitemap": "^4.2.3",
     "react": "^18.3.0",
     "react-dom": "^18.3.0",
     "sass": "^1.83.4",
-    "swiper": "^11.2.3"
+    "swiper": "^12.1.2"
   },
   "devDependencies": {
     "@types/node": "^20",

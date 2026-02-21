@@ -55,7 +55,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
     return (
-        <html lang="ru">
+        <html lang="ru" data-creator="Made by Savsiuk. (telegram: @jakesooly) and ✿ sakura. — web agency ||| Stay Gold. ">
             <head>
                 <Script
                     id="yandex-metrika"
@@ -80,6 +80,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                         `,
                     }}
                 />
+               <meta name="creator" content="Savsiuk [telegram: @jakesooly] and ✿ sakura. — web agency ||| Stay Gold. "/>
             </head>
             <body>
                 <main>

@@ -11,8 +11,12 @@ services:
     environment:
       - NODE_ENV=production
       - NEXT_PUBLIC_API_URL=https://bdji.bsu.by
+      - NEWS_STORE_PATH=/app/data/news/news.json
     ports:
       - '3001:3000'
+    volumes:
+      - news-data:/app/data/news
+      - news-photos:/app/public/news-photos
     networks:
       - app-network
     deploy:
@@ -20,6 +24,31 @@ services:
         limits:
           memory: 1G
           cpus: '0.5'
+
+  bot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - NODE_ENV=production
+    restart: always
+    command: npm run bot:news
+    environment:
+      - NODE_ENV=production
+      - TG_BOT_TOKEN=${TG_BOT_TOKEN}
+      - TG_ALLOWED_USER_IDS=${TG_ALLOWED_USER_IDS}
+      - NEWS_STORE_PATH=/app/data/news/news.json
+      - NEWS_PHOTOS_DIR=/app/public/news-photos
+    volumes:
+      - news-data:/app/data/news
+      - news-photos:/app/public/news-photos
+    networks:
+      - app-network
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.2'
 
   nginx:
     image: nginx:alpine
@@ -40,6 +69,10 @@ services:
         limits:
           memory: 256M
           cpus: '0.2'
+
+volumes:
+  news-data:
+  news-photos:
 
 networks:
   app-network:

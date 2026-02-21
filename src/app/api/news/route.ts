@@ -1,8 +1,10 @@
 import { NextResponse } from 'next/server';
-import NewsData from '@/data/news/newsData';
+import { getPublishedNews } from '@/lib/newsStore';
 
 export async function GET() {
-  const newsList = NewsData.map((item, _) => ({
+  const publishedNews = await getPublishedNews();
+
+  const newsList = publishedNews.map((item) => ({
     id: item.id,
     date: item.date,
     title: item.title,

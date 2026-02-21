@@ -22,6 +22,35 @@ sudo journalctl --vacuum-time=1d
 echo "Очистка Docker..."
 docker system prune -f
 
+# Проверка переменных для Telegram-бота
+echo "Проверка переменных окружения для бота..."
+if [ ! -f .env ]; then
+	echo "Ошибка: файл .env не найден. Создайте .env с TG_BOT_TOKEN и TG_ALLOWED_USER_IDS."
+	exit 1
+fi
+
+if ! grep -q '^TG_BOT_TOKEN=' .env; then
+	echo "Ошибка: TG_BOT_TOKEN не задан в .env"
+	exit 1
+fi
+
+TG_BOT_TOKEN_VALUE=$(grep '^TG_BOT_TOKEN=' .env | head -n1 | cut -d '=' -f2-)
+if [ -z "$TG_BOT_TOKEN_VALUE" ]; then
+	echo "Ошибка: TG_BOT_TOKEN пустой в .env"
+	exit 1
+fi
+
+if ! grep -q '^TG_ALLOWED_USER_IDS=' .env; then
+	echo "Ошибка: TG_ALLOWED_USER_IDS не задан в .env"
+	exit 1
+fi
+
+TG_ALLOWED_USER_IDS_VALUE=$(grep '^TG_ALLOWED_USER_IDS=' .env | head -n1 | cut -d '=' -f2-)
+if [ -z "$TG_ALLOWED_USER_IDS_VALUE" ]; then
+	echo "Ошибка: TG_ALLOWED_USER_IDS пустой в .env"
+	exit 1
+fi
+
 # Запуск контейнеров
 echo "Запуск контейнеров..."
 docker-compose down
@@ -33,3 +62,4 @@ echo "Проверка статуса..."
 docker-compose ps
 
 echo "Деплой завершен. Сайт доступен по адресу: https://bdji.bsu.by" 
+echo "Проверка логов бота: docker-compose logs -f bot"
