@@ -28,7 +28,7 @@ services:
   bot:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.bot  # Используем отдельный Dockerfile
       args:
         - NODE_ENV=production
     restart: always

@@ -1,0 +1,20 @@
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Копируем только необходимые файлы
+COPY package*.json ./
+COPY pnpm-lock.yaml ./
+
+# Устанавливаем pnpm и зависимости
+RUN npm install -g pnpm
+RUN pnpm install --no-frozen-lockfile
+
+# Копируем только код бота и необходимые данные
+COPY scripts/telegram-news-bot.cjs ./scripts/
+COPY data/news/ ./data/news/
+COPY src/lib/newsStore.ts ./src/lib/
+COPY tsconfig.json ./
+
+# Команда для запуска бота
+CMD ["npm", "run", "bot:news"]
