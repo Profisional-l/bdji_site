@@ -15,8 +15,8 @@ services:
     ports:
       - '3001:3000'
     volumes:
-      - news-data:/app/data/news
-      - news-photos:/app/public/news-photos
+      - ./data/news:/app/data/news
+      - ./public/news-photos:/app/public/news-photos
     networks:
       - app-network
     deploy:
@@ -40,8 +40,8 @@ services:
       - NEWS_STORE_PATH=/app/data/news/news.json
       - NEWS_PHOTOS_DIR=/app/public/news-photos
     volumes:
-      - news-data:/app/data/news
-      - news-photos:/app/public/news-photos
+      - ./data/news:/app/data/news
+      - ./public/news-photos:/app/public/news-photos
     networks:
       - app-network
     deploy:
@@ -69,10 +69,6 @@ services:
         limits:
           memory: 256M
           cpus: '0.2'
-
-volumes:
-  news-data:
-  news-photos:
 
 networks:
   app-network:

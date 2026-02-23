@@ -72,6 +72,7 @@ export default function NewsDetailClient({
                             alt={`${newsItem.title} - изображение ${index + 1}`}
                             fill
                             className='object-cover'
+                            unoptimized
                           />
                         </div>
                       </SwiperSlide>
@@ -84,6 +85,7 @@ export default function NewsDetailClient({
                       alt={newsItem.title}
                       fill
                       className='object-cover'
+                      unoptimized
                     />
                   </div>
                 ))}

@@ -192,6 +192,14 @@ function initializeConfig() {
     10
   );
 
+  const DROP_PENDING_UPDATES =
+    (process.env.TG_DROP_PENDING_UPDATES || 'true').toLowerCase() === 'true';
+
+  const RATE_LIMIT_MAX_RETRIES = Number.parseInt(
+    process.env.TG_RATE_LIMIT_MAX_RETRIES || '3',
+    10
+  );
+
   if (!BOT_TOKEN) {
     logger.error('TG_BOT_TOKEN не задан');
     process.exit(1);
@@ -212,6 +220,8 @@ function initializeConfig() {
     POLLING_TIMEOUT_SECONDS,
     MAX_BACKUPS,
     BACKUP_MIN_INTERVAL_SECONDS,
+    DROP_PENDING_UPDATES,
+    RATE_LIMIT_MAX_RETRIES,
   };
 }
 
@@ -537,12 +547,13 @@ class NewsStore {
 
 // ==================== TELEGRAM API ====================
 class TelegramAPI {
-  constructor(token) {
+  constructor(token, options = {}) {
     this.token = token;
     this.baseUrl = `https://api.telegram.org/bot${token}`;
+    this.rateLimitMaxRetries = options.rateLimitMaxRetries || 3;
   }
 
-  async call(method, params = {}, method_type = 'GET') {
+  async call(method, params = {}, method_type = 'GET', attempt = 0) {
     const url = `${this.baseUrl}/${method}`;
 
     try {
@@ -590,6 +601,25 @@ class TelegramAPI {
         ) {
           logger.warn(`Callback answer skipped (${method}): ${description}`);
           return null;
+        }
+
+        if (description.includes('Too Many Requests')) {
+          const fromParams = Number(data?.parameters?.retry_after || 0);
+          const fromTextMatch = description.match(/retry after\s+(\d+)/i);
+          const fromText = fromTextMatch
+            ? Number.parseInt(fromTextMatch[1], 10)
+            : 0;
+          const retryAfterSeconds = fromParams || fromText || 3;
+
+          if (attempt < this.rateLimitMaxRetries) {
+            logger.warn(
+              `Rate limit on ${method}, waiting ${retryAfterSeconds}s (retry ${attempt + 1}/${this.rateLimitMaxRetries})`
+            );
+            await new Promise((resolve) =>
+              setTimeout(resolve, retryAfterSeconds * 1000)
+            );
+            return this.call(method, params, method_type, attempt + 1);
+          }
         }
 
         throw new Error(description);
@@ -1318,14 +1348,12 @@ class CommandHandler {
       ...results.slice(0, 10).map((item) => this.store.formatNewsShort(item)),
     ].join('\n');
 
-    const buttons = results
-      .slice(0, 5)
-      .map((item) => [
-        {
-          text: `#${item.id} ${item.title.substring(0, 30)}`,
-          callback_data: `view_${item.id}`,
-        },
-      ]);
+    const buttons = results.slice(0, 5).map((item) => [
+      {
+        text: `#${item.id} ${item.title.substring(0, 30)}`,
+        callback_data: `view_${item.id}`,
+      },
+    ]);
 
     buttons.push([
       { text: `${CONFIG.emoji.back} Назад`, callback_data: 'menu_main' },
@@ -1467,10 +1495,7 @@ class CommandHandler {
     const userId = message.from?.id;
 
     if (!this.isAllowed(userId)) {
-      await this.telegram.sendMessage(
-        chatId,
-        `${CONFIG.emoji.error} У вас нет доступа к этому боту.`
-      );
+      logger.debug(`Ignoring message from unauthorized user: ${userId}`);
       return;
     }
 
@@ -1507,10 +1532,7 @@ class CommandHandler {
       return;
     }
 
-    await this.telegram.sendMessage(
-      chatId,
-      `${CONFIG.emoji.warning} Поддерживаются текстовые сообщения и фото.`
-    );
+    logger.debug('Ignoring unsupported message type');
   }
 
   async handleEditInput(userId, message) {
@@ -1913,7 +1935,9 @@ class CommandHandler {
 class NewsBot {
   constructor(config) {
     this.config = config;
-    this.telegram = new TelegramAPI(config.BOT_TOKEN);
+    this.telegram = new TelegramAPI(config.BOT_TOKEN, {
+      rateLimitMaxRetries: config.RATE_LIMIT_MAX_RETRIES,
+    });
     this.store = new NewsStore(config);
     this.handler = new CommandHandler(this.telegram, this.store, config);
     this.mediaGroupBuffer = new Map();
@@ -2056,7 +2080,7 @@ class NewsBot {
     try {
       await this.telegram.call(
         'deleteWebhook',
-        { drop_pending_updates: false },
+        { drop_pending_updates: this.config.DROP_PENDING_UPDATES },
         'POST'
       );
       logger.info('Webhook deleted, starting polling');
