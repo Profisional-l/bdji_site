@@ -41,6 +41,9 @@ export default function NewsDetailClient({
 }: {
   newsItem: StoredNewsItem;
 }) {
+  const getNewsImageUrl = (fileName: string) =>
+    `/api/news-photo/${encodeURIComponent(fileName)}`;
+
   return (
     <section>
       <Header type='bg' />
@@ -68,7 +71,7 @@ export default function NewsDetailClient({
                       <SwiperSlide key={index}>
                         <div className='relative aspect-video'>
                           <Image
-                            src={`/news-photos/${img}`}
+                            src={getNewsImageUrl(img)}
                             alt={`${newsItem.title} - изображение ${index + 1}`}
                             fill
                             className='object-cover'
@@ -81,7 +84,7 @@ export default function NewsDetailClient({
                 ) : (
                   <div className='relative aspect-video'>
                     <Image
-                      src={`/news-photos/${newsItem.image}`}
+                      src={getNewsImageUrl(newsItem.image)}
                       alt={newsItem.title}
                       fill
                       className='object-cover'

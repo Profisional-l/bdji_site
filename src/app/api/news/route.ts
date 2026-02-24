@@ -9,7 +9,9 @@ export async function GET() {
     date: item.date,
     title: item.title,
     image: item.image
-      ? `/news-photos/${Array.isArray(item.image) ? item.image[0] : item.image}`
+      ? `/api/news-photo/${encodeURIComponent(
+          Array.isArray(item.image) ? item.image[0] : item.image,
+        )}`
       : '/logos/footer_logo.png',
   }));
 
