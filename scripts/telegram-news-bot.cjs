@@ -1959,10 +1959,45 @@ class NewsBot {
     } catch (error) {
       if (error && error.code === 'EEXIST') {
         let existing = '';
+        let staleLock = false;
         try {
           existing = await fs.readFile(this.config.BOT_LOCK_PATH, 'utf-8');
+
+          const pidLine = existing.split(/\r?\n/)[0]?.trim();
+          const lockPid = Number.parseInt(pidLine || '', 10);
+
+          if (Number.isFinite(lockPid)) {
+            try {
+              process.kill(lockPid, 0);
+            } catch (pidError) {
+              if (pidError && pidError.code === 'ESRCH') {
+                staleLock = true;
+              }
+            }
+          }
         } catch {
           // ignore
+        }
+
+        if (staleLock) {
+          logger.warn(
+            `Stale lock detected, removing: ${this.config.BOT_LOCK_PATH}`
+          );
+          try {
+            await fs.unlink(this.config.BOT_LOCK_PATH);
+            this.botLockHandle = await fs.open(this.config.BOT_LOCK_PATH, 'wx');
+            await this.botLockHandle.writeFile(
+              `${process.pid}\n${new Date().toISOString()}\n`,
+              'utf-8'
+            );
+            logger.info('Bot lock re-acquired after stale cleanup');
+            return true;
+          } catch (reacquireError) {
+            logger.error(
+              'Failed to recover stale lock:',
+              reacquireError.message
+            );
+          }
         }
 
         logger.error(

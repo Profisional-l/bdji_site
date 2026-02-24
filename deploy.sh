@@ -1,5 +1,12 @@
 #!/bin/bash
 
+set -euo pipefail
+
+if ! command -v docker-compose >/dev/null 2>&1; then
+	echo "Ошибка: docker-compose не установлен"
+	exit 1
+fi
+
 # Установка необходимых пакетов
 sudo apt update
 sudo apt install -y docker.io docker-compose certbot python3-certbot-nginx
@@ -21,6 +28,25 @@ sudo journalctl --vacuum-time=1d
 # Очистка Docker
 echo "Очистка Docker..."
 docker system prune -f
+
+# Проверка/освобождение порта 80
+echo "Проверка порта 80..."
+if sudo lsof -i :80 -sTCP:LISTEN -n -P >/dev/null 2>&1; then
+	echo "Порт 80 занят. Пытаюсь остановить системный nginx..."
+	if command -v systemctl >/dev/null 2>&1; then
+		if sudo systemctl is-active --quiet nginx; then
+			sudo systemctl stop nginx || true
+			sudo systemctl disable nginx || true
+			sleep 1
+		fi
+	fi
+
+	if sudo lsof -i :80 -sTCP:LISTEN -n -P >/dev/null 2>&1; then
+		echo "Ошибка: порт 80 всё ещё занят. Освободите его перед деплоем."
+		sudo lsof -i :80 -sTCP:LISTEN -n -P || true
+		exit 1
+	fi
+fi
 
 # Проверка переменных для Telegram-бота
 echo "Проверка переменных окружения для бота..."
@@ -60,6 +86,15 @@ docker-compose up -d
 # Проверка статуса
 echo "Проверка статуса..."
 docker-compose ps
+
+# Проверка что все ключевые сервисы подняты
+for service in app bot nginx; do
+	if ! docker-compose ps "$service" | grep -q "Up"; then
+		echo "Ошибка: сервис $service не запущен"
+		docker-compose logs --tail=80 "$service" || true
+		exit 1
+	fi
+done
 
 echo "Деплой завершен. Сайт доступен по адресу: https://bdji.bsu.by" 
 echo "Проверка логов бота: docker-compose logs -f bot"
