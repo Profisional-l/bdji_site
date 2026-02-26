@@ -142,7 +142,81 @@ export async function updateStore(
 }
 
 function sortByLatest(items: StoredNewsItem[]): StoredNewsItem[] {
-  return [...items].sort((a, b) => b.id - a.id);
+  const monthMap: Record<string, number> = {
+    января: 0,
+    февраля: 1,
+    марта: 2,
+    апреля: 3,
+    мая: 4,
+    июня: 5,
+    июля: 6,
+    августа: 7,
+    сентября: 8,
+    октября: 9,
+    ноября: 10,
+    декабря: 11,
+  };
+
+  const toTimestamp = (value: string): number | null => {
+    const normalized = value.trim().toLowerCase().replace(/\s+/g, ' ');
+    const ruMatch = normalized.match(/^(\d{1,2})\s+([а-яё]+)\s+(\d{4})$/i);
+
+    if (ruMatch) {
+      const day = Number.parseInt(ruMatch[1], 10);
+      const month = monthMap[ruMatch[2]];
+      const year = Number.parseInt(ruMatch[3], 10);
+
+      if (Number.isFinite(day) && month !== undefined && Number.isFinite(year)) {
+        return new Date(year, month, day).getTime();
+      }
+    }
+
+    const dotMatch = normalized.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
+    if (dotMatch) {
+      const day = Number.parseInt(dotMatch[1], 10);
+      const month = Number.parseInt(dotMatch[2], 10) - 1;
+      const year = Number.parseInt(dotMatch[3], 10);
+
+      if (
+        Number.isFinite(day) &&
+        Number.isFinite(month) &&
+        month >= 0 &&
+        month <= 11 &&
+        Number.isFinite(year)
+      ) {
+        return new Date(year, month, day).getTime();
+      }
+    }
+
+    const parsed = Date.parse(value);
+    return Number.isNaN(parsed) ? null : parsed;
+  };
+
+  return [...items].sort((a, b) => {
+    const dateA = toTimestamp(a.date);
+    const dateB = toTimestamp(b.date);
+
+    if (dateA !== null && dateB !== null && dateA !== dateB) {
+      return dateB - dateA;
+    }
+
+    if (dateA !== null && dateB === null) {
+      return -1;
+    }
+
+    if (dateA === null && dateB !== null) {
+      return 1;
+    }
+
+    const createdA = Date.parse(a.createdAt);
+    const createdB = Date.parse(b.createdAt);
+
+    if (!Number.isNaN(createdA) && !Number.isNaN(createdB) && createdA !== createdB) {
+      return createdB - createdA;
+    }
+
+    return b.id - a.id;
+  });
 }
 
 export async function getPublishedNews(): Promise<StoredNewsItem[]> {

@@ -2,9 +2,11 @@
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const crypto = require('node:crypto');
+const util = require('node:util');
 
 // ==================== КОНФИГУРАЦИЯ ====================
 const CONFIG = {
+  mainPanelButtonText: 'Главное меню',
   // Цвета для логирования
   colors: {
     reset: '\x1b[0m',
@@ -57,8 +59,41 @@ const CONFIG = {
 
 // ==================== УТИЛИТЫ ====================
 const logger = {
+  history: [],
+  historyLimit: 1000,
+
   _getTimestamp() {
     return new Date().toISOString();
+  },
+
+  _stringifyArg(value) {
+    if (typeof value === 'string') {
+      return value;
+    }
+
+    return util.inspect(value, {
+      depth: 4,
+      maxArrayLength: 50,
+      breakLength: 120,
+      compact: true,
+    });
+  },
+
+  _appendHistory(level, args) {
+    const line = `[${this._getTimestamp()}] ${level}: ${args
+      .map((arg) => this._stringifyArg(arg))
+      .join(' ')}`;
+
+    this.history.push(line);
+
+    if (this.history.length > this.historyLimit) {
+      this.history.splice(0, this.history.length - this.historyLimit);
+    }
+  },
+
+  getRecent(limit = 50) {
+    if (limit <= 0) return [];
+    return this.history.slice(-limit);
   },
 
   _colorize(text, color) {
@@ -66,6 +101,7 @@ const logger = {
   },
 
   info(...args) {
+    this._appendHistory('INFO', args);
     console.log(
       this._colorize(`[${this._getTimestamp()}] ℹ️ INFO:`, 'blue'),
       ...args
@@ -73,6 +109,7 @@ const logger = {
   },
 
   success(...args) {
+    this._appendHistory('SUCCESS', args);
     console.log(
       this._colorize(`[${this._getTimestamp()}] ✅ SUCCESS:`, 'green'),
       ...args
@@ -80,6 +117,7 @@ const logger = {
   },
 
   warn(...args) {
+    this._appendHistory('WARN', args);
     console.log(
       this._colorize(`[${this._getTimestamp()}] ⚠️ WARN:`, 'yellow'),
       ...args
@@ -87,6 +125,7 @@ const logger = {
   },
 
   error(...args) {
+    this._appendHistory('ERROR', args);
     console.error(
       this._colorize(`[${this._getTimestamp()}] ❌ ERROR:`, 'red'),
       ...args
@@ -94,6 +133,7 @@ const logger = {
   },
 
   debug(...args) {
+    this._appendHistory('DEBUG', args);
     if (process.env.DEBUG) {
       console.log(
         this._colorize(`[${this._getTimestamp()}] 🔍 DEBUG:`, 'magenta'),
@@ -338,11 +378,46 @@ class NewsStore {
   }
 
   validateItem(item) {
+    const normalizeTextBlocks = (value) => {
+      const source = Array.isArray(value) ? value : [value];
+
+      return source
+        .map((block) => {
+          if (typeof block === 'string') {
+            return block.trim();
+          }
+
+          if (block === null || block === undefined) {
+            return '';
+          }
+
+          if (typeof block === 'object') {
+            try {
+              return JSON.stringify(block).trim();
+            } catch {
+              return String(block).trim();
+            }
+          }
+
+          return String(block).trim();
+        })
+        .filter(Boolean);
+    };
+
+    const normalizedTitle =
+      typeof item.title === 'string'
+        ? item.title
+        : item.title === null || item.title === undefined
+          ? ''
+          : String(item.title);
+
+    const normalizedText = normalizeTextBlocks(item.text);
+
     // Убеждаемся, что все поля в правильном формате
     return {
       id: item.id || 0,
-      title: item.title || 'Без заголовка',
-      text: Array.isArray(item.text) ? item.text : [item.text || ''],
+      title: normalizedTitle || 'Без заголовка',
+      text: normalizedText.length > 0 ? normalizedText : ['Новая новость'],
       image: item.image || undefined,
       date: item.date || this.todayDate(),
       status: item.status || 'draft',
@@ -443,6 +518,19 @@ class NewsStore {
     }));
   }
 
+  async purge(id) {
+    const store = await this.read();
+    const index = store.items.findIndex((item) => item.id === id);
+
+    if (index === -1) {
+      return null;
+    }
+
+    const [removed] = store.items.splice(index, 1);
+    await this.write(store);
+    return removed;
+  }
+
   async restore(id) {
     return this.update(id, () => ({ status: 'draft' }));
   }
@@ -489,6 +577,23 @@ class NewsStore {
     const store = await this.read();
     const searchLower = query.toLowerCase();
 
+    const toSearchableText = (value) => {
+      if (typeof value === 'string') {
+        return value.toLowerCase();
+      }
+      if (value === null || value === undefined) {
+        return '';
+      }
+      if (typeof value === 'object') {
+        try {
+          return JSON.stringify(value).toLowerCase();
+        } catch {
+          return String(value).toLowerCase();
+        }
+      }
+      return String(value).toLowerCase();
+    };
+
     let items = store.items;
     if (filter !== 'all') {
       items = items.filter((item) => item.status === filter);
@@ -496,8 +601,8 @@ class NewsStore {
 
     return items.filter(
       (item) =>
-        item.title.toLowerCase().includes(searchLower) ||
-        item.text.some((block) => block.toLowerCase().includes(searchLower))
+        toSearchableText(item.title).includes(searchLower) ||
+        item.text.some((block) => toSearchableText(block).includes(searchLower))
     );
   }
 
@@ -743,9 +848,17 @@ class CommandHandler {
         currentFilter: 'all',
         lastMessageId: null,
         lastCommand: null,
+        awaitingSearch: false,
+        panelKeyboardShown: false,
+        activeEditSessionKey: null,
       });
     }
     return this.userSessions.get(userId);
+  }
+
+  setAwaitingSearch(userId, value) {
+    const session = this.getUserSession(userId);
+    session.awaitingSearch = value;
   }
 
   // Получение сессии редактирования
@@ -757,15 +870,68 @@ class CommandHandler {
         newsId,
         tempData: {},
         messageId: null,
+        updatedAt: Date.now(),
       });
     }
-    return this.editSessions.get(key);
+
+    const session = this.editSessions.get(key);
+    session.updatedAt = Date.now();
+
+    const userSession = this.getUserSession(userId);
+    userSession.activeEditSessionKey = key;
+
+    return session;
+  }
+
+  getActiveEditSession(userId) {
+    const userSession = this.getUserSession(userId);
+
+    if (userSession.activeEditSessionKey) {
+      const active = this.editSessions.get(userSession.activeEditSessionKey);
+      if (active) {
+        return active;
+      }
+      userSession.activeEditSessionKey = null;
+    }
+
+    let fallbackKey = null;
+    let fallbackSession = null;
+    for (const [key, session] of this.editSessions) {
+      if (!key.startsWith(`${userId}:`)) continue;
+
+      if (!fallbackSession || session.updatedAt > fallbackSession.updatedAt) {
+        fallbackKey = key;
+        fallbackSession = session;
+      }
+    }
+
+    if (fallbackKey) {
+      userSession.activeEditSessionKey = fallbackKey;
+    }
+
+    return fallbackSession;
   }
 
   // Очистка сессии редактирования
   clearEditSession(userId, newsId) {
     const key = `${userId}:${newsId}`;
     this.editSessions.delete(key);
+
+    const userSession = this.getUserSession(userId);
+    if (userSession.activeEditSessionKey === key) {
+      userSession.activeEditSessionKey = null;
+    }
+  }
+
+  clearAllUserEditSessions(userId) {
+    for (const key of this.editSessions.keys()) {
+      if (key.startsWith(`${userId}:`)) {
+        this.editSessions.delete(key);
+      }
+    }
+
+    const userSession = this.getUserSession(userId);
+    userSession.activeEditSessionKey = null;
   }
 
   // ==================== КЛАВИАТУРЫ ====================
@@ -808,6 +974,33 @@ class CommandHandler {
         { text: `${CONFIG.emoji.help} Помощь`, callback_data: 'menu_help' },
       ],
     ]);
+  }
+
+  getMainPanelKeyboard() {
+    return {
+      keyboard: [[{ text: CONFIG.mainPanelButtonText }]],
+      resize_keyboard: true,
+      is_persistent: true,
+      one_time_keyboard: false,
+      input_field_placeholder: 'Нажмите «Главное меню»',
+    };
+  }
+
+  async ensureMainPanelButton(chatId, userId) {
+    const session = this.getUserSession(userId);
+    if (session.panelKeyboardShown) {
+      return;
+    }
+
+    await this.telegram.sendMessage(
+      chatId,
+      `${CONFIG.emoji.info} Панель управления активирована`,
+      {
+        reply_markup: this.getMainPanelKeyboard(),
+      }
+    );
+
+    session.panelKeyboardShown = true;
   }
 
   // Клавиатура для списка новостей
@@ -925,6 +1118,10 @@ class CommandHandler {
       actionRow3.push({
         text: `${CONFIG.emoji.save} Восстановить`,
         callback_data: `restore_${newsId}`,
+      });
+      actionRow3.push({
+        text: '🔥 Удалить навсегда',
+        callback_data: `purge_${newsId}`,
       });
     } else {
       actionRow3.push({
@@ -1098,7 +1295,7 @@ class CommandHandler {
   }
 
   // Начать редактирование
-  async startEditing(chatId, newsId, mode, messageId) {
+  async startEditing(chatId, userId, newsId, mode, messageId) {
     const news = await this.store.findById(newsId);
     if (!news) {
       await this.telegram.sendMessage(
@@ -1108,7 +1305,8 @@ class CommandHandler {
       return;
     }
 
-    const session = this.getEditSession(chatId, newsId);
+    this.clearAllUserEditSessions(userId);
+    const session = this.getEditSession(userId, newsId);
     session.mode = mode;
     session.messageId = messageId;
 
@@ -1179,8 +1377,8 @@ class CommandHandler {
   }
 
   // Сохранить редактирование
-  async saveEditing(chatId, newsId, messageId, callbackQueryId = null) {
-    const session = this.getEditSession(chatId, newsId);
+  async saveEditing(chatId, userId, newsId, messageId, callbackQueryId = null) {
+    const session = this.getEditSession(userId, newsId);
 
     if (!session.mode || !session.tempData) {
       if (callbackQueryId) {
@@ -1247,7 +1445,7 @@ class CommandHandler {
       }
 
       if (updated) {
-        this.clearEditSession(chatId, newsId);
+        this.clearEditSession(userId, newsId);
         if (callbackQueryId) {
           await this.telegram.answerCallbackQuery(
             callbackQueryId,
@@ -1269,8 +1467,14 @@ class CommandHandler {
   }
 
   // Отмена редактирования
-  async cancelEditing(chatId, newsId, messageId, callbackQueryId = null) {
-    this.clearEditSession(chatId, newsId);
+  async cancelEditing(
+    chatId,
+    userId,
+    newsId,
+    messageId,
+    callbackQueryId = null
+  ) {
+    this.clearEditSession(userId, newsId);
     if (callbackQueryId) {
       await this.telegram.answerCallbackQuery(
         callbackQueryId,
@@ -1307,6 +1511,7 @@ class CommandHandler {
     ].join('\n');
 
     const keyboard = this.telegram.createInlineKeyboard([
+      [{ text: '🧾 Логи бота', callback_data: 'menu_logs' }],
       [{ text: `${CONFIG.emoji.back} Назад`, callback_data: 'menu_main' }],
     ]);
 
@@ -1317,6 +1522,39 @@ class CommandHandler {
     } else {
       await this.telegram.sendMessage(chatId, text, {
         reply_markup: keyboard,
+      });
+    }
+  }
+
+  async showBotLogs(chatId, messageId = null) {
+    const lines = logger.getRecent(50);
+    let body = lines.length > 0 ? lines.join('\n') : 'Логи пока отсутствуют';
+
+    const maxBodyLength = 3600;
+    if (body.length > maxBodyLength) {
+      body = `...\n${body.slice(-maxBodyLength)}`;
+    }
+
+    const text = `🧾 Последние логи бота (до 50 строк)\n\n${body}`;
+    const keyboard = this.telegram.createInlineKeyboard([
+      [{ text: '🔙 К статистике', callback_data: 'menu_stats' }],
+      [
+        {
+          text: `${CONFIG.emoji.back} Главное меню`,
+          callback_data: 'menu_main',
+        },
+      ],
+    ]);
+
+    if (messageId) {
+      await this.telegram.editMessageText(chatId, messageId, text, {
+        reply_markup: keyboard,
+        parse_mode: undefined,
+      });
+    } else {
+      await this.telegram.sendMessage(chatId, text, {
+        reply_markup: keyboard,
+        parse_mode: undefined,
       });
     }
   }
@@ -1495,25 +1733,45 @@ class CommandHandler {
     const userId = message.from?.id;
 
     if (!this.isAllowed(userId)) {
+      if (message.chat?.type === 'private') {
+        await this.telegram.sendMessage(
+          chatId,
+          `${CONFIG.emoji.error} Нет доступа к боту. Ваш userId: ${userId}. Передайте его администратору для добавления в TG_ALLOWED_USER_IDS.`,
+          { parse_mode: undefined }
+        );
+      }
       logger.debug(`Ignoring message from unauthorized user: ${userId}`);
       return;
     }
 
-    // Проверяем, не в режиме ли редактирования пользователь
-    for (const [key, session] of this.editSessions) {
-      if (key.startsWith(`${userId}:`)) {
-        await this.handleEditInput(userId, message);
-        return;
-      }
+    if (message.text?.trim() === CONFIG.mainPanelButtonText) {
+      this.clearAllUserEditSessions(userId);
+      this.setAwaitingSearch(userId, false);
+      await this.showMainMenu(chatId);
+      return;
     }
+
+    // Проверяем, не в режиме ли редактирования пользователь
+    if (this.getActiveEditSession(userId)) {
+      await this.handleEditInput(userId, message);
+      return;
+    }
+
+    const session = this.getUserSession(userId);
 
     // Обработка текстовых команд
     if (message.text) {
+      const text = message.text.trim();
+
+      if (session.awaitingSearch && !text.startsWith('/')) {
+        session.awaitingSearch = false;
+        await this.searchNews(chatId, text);
+        return;
+      }
+
       if (message.text.startsWith('/')) {
+        session.awaitingSearch = false;
         await this.handleCommand(message);
-      } else if (message.text.startsWith('/search ')) {
-        const query = message.text.substring(8).trim();
-        await this.searchNews(chatId, query);
       } else {
         // Если не команда и не в режиме редактирования - создаём черновик
         await this.createDraftFromMessage(message);
@@ -1539,16 +1797,8 @@ class CommandHandler {
     const chatId = message.chat.id;
 
     // Находим сессию редактирования
-    let targetSession = null;
-    let targetNewsId = null;
-
-    for (const [key, session] of this.editSessions) {
-      if (key.startsWith(`${userId}:`)) {
-        targetSession = session;
-        targetNewsId = session.newsId;
-        break;
-      }
-    }
+    const targetSession = this.getActiveEditSession(userId);
+    const targetNewsId = targetSession?.newsId;
 
     if (!targetSession) return;
 
@@ -1561,7 +1811,12 @@ class CommandHandler {
     // Обработка специальных команд
     if (message.text) {
       if (message.text === '/cancel') {
-        await this.cancelEditing(chatId, targetNewsId, targetSession.messageId);
+        await this.cancelEditing(
+          chatId,
+          userId,
+          targetNewsId,
+          targetSession.messageId
+        );
         return;
       }
 
@@ -1677,15 +1932,20 @@ class CommandHandler {
 
   async handleCommand(message) {
     const chatId = message.chat.id;
+    const userId = message.from?.id;
     const text = message.text;
 
     // Простые команды
     if (text === '/start' || text === '/help') {
+      await this.ensureMainPanelButton(chatId, userId);
+      this.setAwaitingSearch(userId, false);
       await this.showMainMenu(chatId);
       return;
     }
 
     if (text === '/menu') {
+      await this.ensureMainPanelButton(chatId, userId);
+      this.setAwaitingSearch(userId, false);
       await this.showMainMenu(chatId);
       return;
     }
@@ -1697,10 +1957,12 @@ class CommandHandler {
 
     switch (command) {
       case '/list':
+        this.setAwaitingSearch(userId, false);
         await this.showNewsList(chatId, args || 'all', 1);
         break;
 
       case '/show':
+        this.setAwaitingSearch(userId, false);
         const id = parseInt(args, 10);
         if (isNaN(id)) {
           await this.telegram.sendMessage(chatId, 'Используйте: /show <id>');
@@ -1710,14 +1972,25 @@ class CommandHandler {
         break;
 
       case '/search':
-        await this.searchNews(chatId, args);
+        if (args) {
+          this.setAwaitingSearch(userId, false);
+          await this.searchNews(chatId, args);
+        } else {
+          this.setAwaitingSearch(userId, true);
+          await this.telegram.sendMessage(
+            chatId,
+            `${CONFIG.emoji.search} Отправьте поисковый запрос:`
+          );
+        }
         break;
 
       case '/stats':
+        this.setAwaitingSearch(userId, false);
         await this.showStats(chatId);
         break;
 
       default:
+        this.setAwaitingSearch(userId, false);
         await this.telegram.sendMessage(
           chatId,
           `${CONFIG.emoji.warning} Неизвестная команда. Используйте /help`
@@ -1742,6 +2015,10 @@ class CommandHandler {
       return;
     }
 
+    if (data !== 'menu_search') {
+      this.setAwaitingSearch(userId, false);
+    }
+
     // Парсим callback data
     if (data.startsWith('menu_')) {
       const action = data.substring(5);
@@ -1754,6 +2031,7 @@ class CommandHandler {
           await this.showNewsList(chatId, 'all', 1, messageId);
           break;
         case 'search':
+          this.setAwaitingSearch(userId, true);
           await this.telegram.editMessageText(
             chatId,
             messageId,
@@ -1767,6 +2045,9 @@ class CommandHandler {
           break;
         case 'stats':
           await this.showStats(chatId, messageId);
+          break;
+        case 'logs':
+          await this.showBotLogs(chatId, messageId);
           break;
         case 'help':
           await this.telegram.editMessageText(
@@ -1847,7 +2128,7 @@ class CommandHandler {
 
     // Обработка действий с новостью
     const actionMatch = data.match(
-      /^(publish|unpublish|main|delete|restore)_(\d+)$/
+      /^(publish|unpublish|main|delete|restore|purge)_(\d+)$/
     );
     if (actionMatch) {
       const [, action, idStr] = actionMatch;
@@ -1881,10 +2162,32 @@ class CommandHandler {
             updated = await this.store.restore(newsId);
             message = `${CONFIG.emoji.save} Восстановлено`;
             break;
+          case 'purge':
+            updated = await this.store.purge(newsId);
+            message = '🔥 Удалено навсегда';
+            break;
+        }
+
+        if (!updated) {
+          await this.telegram.answerCallbackQuery(
+            query.id,
+            `${CONFIG.emoji.error} Новость не найдена`,
+            true
+          );
+          return;
         }
 
         await this.telegram.answerCallbackQuery(query.id, message);
-        await this.showNews(chatId, newsId, messageId);
+        if (action === 'purge') {
+          const session = this.getUserSession(userId);
+          const nextFilter =
+            session.currentFilter === 'deleted' ? 'deleted' : 'all';
+          session.currentFilter = nextFilter;
+          session.currentPage = 1;
+          await this.showNewsList(chatId, nextFilter, 1, messageId);
+        } else {
+          await this.showNews(chatId, newsId, messageId);
+        }
       } catch (error) {
         logger.error('Error in action:', error);
         await this.telegram.answerCallbackQuery(
@@ -1902,7 +2205,7 @@ class CommandHandler {
       const [, mode, idStr] = editMatch;
       const newsId = parseInt(idStr, 10);
 
-      await this.startEditing(chatId, newsId, mode, messageId);
+      await this.startEditing(chatId, userId, newsId, mode, messageId);
       await this.telegram.answerCallbackQuery(
         query.id,
         `Редактирование ${mode}`
@@ -1914,7 +2217,7 @@ class CommandHandler {
     if (saveMatch) {
       const newsId = parseInt(saveMatch[1], 10);
       await this.telegram.answerCallbackQuery(query.id, 'Сохранение...');
-      await this.saveEditing(chatId, newsId, messageId);
+      await this.saveEditing(chatId, userId, newsId, messageId);
       return;
     }
 
@@ -1922,7 +2225,7 @@ class CommandHandler {
     if (cancelMatch) {
       const newsId = parseInt(cancelMatch[1], 10);
       await this.telegram.answerCallbackQuery(query.id, 'Отменено');
-      await this.cancelEditing(chatId, newsId, messageId);
+      await this.cancelEditing(chatId, userId, newsId, messageId);
       return;
     }
 
@@ -2075,7 +2378,7 @@ class NewsBot {
       // Если это медиагруппа, добавляем в буфер
       if (result && result.mediaGroup) {
         const { message } = result;
-        const groupId = message.media_group_id;
+        const groupId = `${message.chat.id}:${message.media_group_id}`;
         const current = this.mediaGroupBuffer.get(groupId);
 
         if (!current) {
