@@ -94,6 +94,10 @@ export const headerLinks: HeaderLink[] = [
         subname: 'Летние и зимние школы',
         subhref: '/summer-and-winter-schools',
       },
+      {
+        subname: 'Актив СИБД',
+        subhref: '/sibd_active',
+      }
     ],
   },
 ];
