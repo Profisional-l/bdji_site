@@ -1,7 +1,7 @@
 import React from 'react';
 import Image from 'next/image';
 import Lyashenko from '@/../public/people/lyashenko_director_sibd.png';
-import Rublevskaya from '@/../public/people/rublevskaya_secretary_sibd.png';
+import Kovgar from '@/../public/people/Kovgar_secretary_sibd.jpg';
 import management from '@/data/about-institute/management';
 
 const Management = () => {
@@ -32,7 +32,7 @@ const Management = () => {
 
                 <div className="lg:flex max-lg:mt-[50px] lg:gap-[50px]">
                     <Image
-                        src={Rublevskaya}
+                        src={Kovgar}
                         className="h-auto lg:min-w-[400px] lg:w-[400px] xl:w-[500px]"
                         alt={management.specialist.name}
                     />

@@ -95,7 +95,7 @@ export const headerLinks: HeaderLink[] = [
         subhref: '/summer-and-winter-schools',
       },
       {
-        subname: 'Актив СИБД',
+        subname: 'Студсовет СИБД',
         subhref: '/sibd_active',
       }
     ],
