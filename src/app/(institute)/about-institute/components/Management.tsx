@@ -24,8 +24,10 @@ const Management = () => {
                             {management.director.position}
                             <br />
                             {management.director.degree}
+                            <br />
                         </p>
                         <span>{management.director.phone}</span>
+                            {management.director.address}
                         <span>{management.director.email}</span>
                     </div>
                 </div>
@@ -41,12 +43,16 @@ const Management = () => {
                             {management.specialist.name}
                         </h3>
                         <p className="leading-[1.2]">
-                            {management.specialist.position}
+                            {management.specialist.position}                            
+                            <br />
+                            {management.specialist.degree}
                         </p>
                         <span>{management.specialist.phone}</span>
+                            {management.specialist.address}
                         <span>{management.specialist.email}</span>
                     </div>
                 </div>
+
             </div>
         </section>
     );

@@ -30,7 +30,7 @@ export const headerLinks: HeaderLink[] = [
       },
       {
         subname: 'Идеологическая и воспит. работа↗',
-        subhref: 'https://minsk.gov.by/ru/actual/view/209/2025.shtml',
+        subhref: 'https://minsk.gov.by/ru/actual/view/209/2026.shtml',
         blank: true,
       },
     ],

@@ -14,6 +14,8 @@ const dataSourcePhyz = [
     paid2024: '5',
     budget2025: '20',
     paid2025: '5',
+    budget2026: '20',
+    paid2026: '5',
   },
   {
     key: '2',
@@ -26,6 +28,8 @@ const dataSourcePhyz = [
     paid2024: '287',
     budget2025: '371',
     paid2025: '302',
+    budget2026: '-',
+    paid2026: '-',
   },
 ];
 
@@ -41,6 +45,8 @@ const dataSourceMath = [
     paid2024: '5',
     budget2025: '20',
     paid2025: '5',
+    budget2026: '20',
+    paid2026: '5',
   },
   {
     key: '2',
@@ -53,6 +59,8 @@ const dataSourceMath = [
     paid2024: '295',
     budget2025: '367',
     paid2025: '317',
+    budget2026: '-',
+    paid2026: '-',
   },
 ];
 
@@ -68,6 +76,8 @@ const dataSource = [
     paid2024: '20',
     budget2025: '-',
     paid2025: '20',
+    budget2026: '-',
+    paid2026: '20',
   },
   {
     key: '2',
@@ -80,6 +90,8 @@ const dataSource = [
     paid2024: '334',
     budget2025: '-',
     paid2025: '353',
+    budget2026: '-',
+    paid2026: '-',
   },
 ];
 
@@ -89,23 +101,23 @@ export const columns = [
     dataIndex: 'title',
     key: 'title',
   },
-  {
-    title: '2022',
-    children: [
-      {
-        title: 'Бюджет',
-        dataIndex: 'budget2022',
-        key: 'budget2022',
-        align: 'center',
-      },
-      {
-        title: 'Платная',
-        dataIndex: 'paid2022',
-        key: 'paid2022',
-        align: 'center',
-      },
-    ],
-  },
+  // {
+  //   title: '2022',
+  //   children: [
+  //     {
+  //       title: 'Бюджет',
+  //       dataIndex: 'budget2022',
+  //       key: 'budget2022',
+  //       align: 'center',
+  //     },
+  //     {
+  //       title: 'Платная',
+  //       dataIndex: 'paid2022',
+  //       key: 'paid2022',
+  //       align: 'center',
+  //     },
+  //   ],
+  // },
   {
     title: '2023',
     children: [
@@ -153,6 +165,23 @@ export const columns = [
         title: 'Платная',
         dataIndex: 'paid2025',
         key: 'paid2025',
+        align: 'center',
+      },
+    ],
+  },
+  {
+    title: '2026',
+    children: [
+      {
+        title: 'Бюджет',
+        dataIndex: 'budget2026',
+        key: 'budget2026',
+        align: 'center',
+      },
+      {
+        title: 'Платная',
+        dataIndex: 'paid2026',
+        key: 'paid2026',
         align: 'center',
       },
     ],

@@ -10,8 +10,8 @@ import {
     NADEZHDA_STUDENT_INFO
 } from '@/data/about-institute/feedbackParagraphs';
 
-import feofanStudent from '@/../public/people/feofan_student.png';
-import nadezhdaStudent from '@/../public/people/nadezhda_student.png';
+import ivanStudent from '@/../public/people/ivan_student.png';
+import leraStudent from '@/../public/people/lera_student.jpg';
 import Link from 'next/link';
 
 const Feedback = () => {
@@ -21,12 +21,12 @@ const Feedback = () => {
         {
             paragraphs: FEOFAN_REVIEW_PARAGRAPHS,
             info: FEOFAN_STUDENT_INFO,
-            image: feofanStudent
+            image: ivanStudent
         },
         {
             paragraphs: NADEZHDA_REVIEW_PARAGRAPHS,
             info: NADEZHDA_STUDENT_INFO,
-            image: nadezhdaStudent
+            image: leraStudent
         }
     ];
 
@@ -63,14 +63,14 @@ const Feedback = () => {
                         onClick={feofanSlide}
                         className="hover:text-red rounded"
                     >
-                        Феофан
+                        Иван
                     </Link>
                     <Link
                         href="#feedback"
                         onClick={nadezhdaSlide}
                         className="hover:text-red rounded"
                     >
-                        Надежда
+                        Валерия
                     </Link>
                 </div>
             </div>
