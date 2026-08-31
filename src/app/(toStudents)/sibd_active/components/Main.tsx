@@ -24,7 +24,7 @@ const Main = () => {
                     <div className="order-1 lg:order-2 relative w-full aspect-[4/3] rounded-xl overflow-hidden shadow-lg group">
                         <Image 
                             src={aktivSIBD.photos[0]} 
-                            alt="Миссия Актива" 
+                            alt="Миссия СтудСовета СИБД" 
                             fill 
                             priority
                             className="object-cover group-hover:scale-105 transition-transform duration-500"
@@ -38,7 +38,7 @@ const Main = () => {
                     <div className="relative w-full aspect-[4/3] rounded-xl overflow-hidden shadow-lg group">
                         <Image 
                             src={aktivSIBD.photos[1]} 
-                            alt="Деятельность Актива" 
+                            alt="Деятельность СтудСовета СИБД" 
                             fill 
                             className="object-cover group-hover:scale-105 transition-transform duration-500"
                             sizes="(max-width: 768px) 100vw, 50vw"
