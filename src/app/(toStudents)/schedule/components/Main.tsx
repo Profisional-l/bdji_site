@@ -40,11 +40,6 @@ const ScheduleContent = () => {
                     <Image src={Clip} height={32} alt='#' />
                     <Link href={'https://bdji.bsu.by/files/prilozhenie_1.pdf'} className="underline underline-offset-4 hover:text-red" target="_blank" rel='noopener noreferrer'>{scheduleText.application}</Link>
                 </div>
-
-                <div className="graph-dormitory mt-[75px] lg:mt-[100px]">
-                    <h2 className="wwtitle--bold">{scheduleText.headline2}</h2>
-                    <p className="wwtext italic mt-[25px]">{scheduleText.tip}</p>
-                </div>
             </div>
         </section>
     )

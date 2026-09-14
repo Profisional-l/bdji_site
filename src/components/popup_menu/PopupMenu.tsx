@@ -4,6 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 
 import { MenuProps } from '@/interfaces/popupMenuProps';
+import ExternalLinkIcon from '@/components/icons/ExternalLinkIcon';
 
 const PopupMenu: React.FC<MenuProps> = ({ children, submenuItems }) => {
     return (
@@ -24,12 +25,15 @@ const PopupMenu: React.FC<MenuProps> = ({ children, submenuItems }) => {
                             <li key={idx}>
                                 <Link
                                     href={submenuItem.subhref}
-                                    className='block px-4 py-2.5 text-sm font-medium rounded-lg text-gray-700 hover:bg-blue hover:text-white
+                                    className='flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium rounded-lg text-gray-700 hover:bg-blue hover:text-white
                                                transition-colors duration-250 ease-in-out whitespace-nowrap'
                                     target={submenuItem.blank ? '_blank' : undefined}
                                     rel={submenuItem.blank ? 'noopener noreferrer' : undefined}
                                 >
                                     {submenuItem.subname}
+                                    {submenuItem.blank && (
+                                        <ExternalLinkIcon className="shrink-0" />
+                                    )}
                                 </Link>
                             </li>
                         ))}

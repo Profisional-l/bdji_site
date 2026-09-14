@@ -1,22 +1,25 @@
 FROM node:18-alpine AS base
+RUN apk add --no-cache libc6-compat
 
 # Установка зависимостей
 FROM base AS deps
 WORKDIR /app
 
 # Установка pnpm
-RUN npm install -g pnpm
+RUN npm install -g pnpm@9
 
 # Копирование только файлов зависимостей
-COPY package.json pnpm-lock.yaml ./
-RUN pnpm install --no-frozen-lockfile
+COPY package.json pnpm-lock.yaml .npmrc ./
+RUN pnpm install --no-frozen-lockfile --config.trust-lockfile=true
 
 # Сборка приложения
 FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-RUN npm install -g pnpm
+RUN npm install -g pnpm@9
+# Next 15 image blur on Alpine needs wasm sharp when native binaries are missing
+RUN npm install --cpu=wasm32 sharp
 RUN pnpm build
 
 # Финальный образ

@@ -10,9 +10,9 @@ export default function News() {
     return (
         <section>
             <Header type="bg" />
-            <FadeIn>
+            {/* <FadeIn>
                 <Banner />
-            </FadeIn>
+            </FadeIn> */}
 
             <FadeIn>
                 <Feed />

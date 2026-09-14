@@ -1,8 +1,15 @@
 'use client'
 
-import { advantagesText, advantagesPoints } from "@/data/main/advantages"
+import { useState } from 'react'
+import { advantagesText, advantagesPoints } from '@/data/main/advantages'
 
 const Advantages = () => {
+    const [openIndex, setOpenIndex] = useState(0)
+
+    const toggleItem = (index: number) => {
+        setOpenIndex((current) => (current === index ? -1 : index))
+    }
+
     return (
         <section className="advantages flex-center bg-blue bg-[url('/pics/nice_background.png')] bg-cover bg-center">
             <div className="advantages__wrapper wrapper py-[75px] lg:py-[100px]">
@@ -12,46 +19,45 @@ const Advantages = () => {
                 </h2>
 
                 <div className="advantages__content flex flex-col gap-[20px] mt-[75px] lg:mt-[100px]">
-                    {
-                        advantagesText.map((item, index) => {
-                            return (
-                                <p key={index} className="md:w-[50%] wwtext text-white">{item}</p>
-                            )
-                        })
-                    }
+                    {advantagesText.map((item, index) => (
+                        <p key={index} className="md:w-[50%] wwtext text-white">
+                            {item}
+                        </p>
+                    ))}
                 </div>
-                <div className="advantages__slider mt-[75px] lg:mt-[100px] flex flex-wrap gap-4 transition-[1s]">
-                    {
-                        advantagesPoints.map((item, index) => {
-                            return (
-                                <div
-                                    key={index}
-                                    className="slider__item bg-white text-blue px-[40px] rounded-lg cursor-pointer flex items-center gap-8 transition-all duration-300 hover:bg-opacity-90"
-                                    onClick={() => {
-                                        const items = document.querySelectorAll('.slider__item');
-                                        const currentText = items[index].querySelector('.slider__text');
+                <div className="advantages__slider mt-[75px] lg:mt-[100px] flex flex-col items-start lg:flex-row lg:flex-wrap gap-4">
+                    {advantagesPoints.map((item, index) => {
+                        const isOpen = openIndex === index
 
-                                        if (!currentText?.classList.contains('hidden')) {
-                                            currentText?.classList.add('hidden');
-                                            items[index].classList.remove('shadow-lg');
-                                        } else {
-                                            items.forEach(item => {
-                                                item.querySelector('.slider__text')?.classList.add('hidden');
-                                                item.classList.remove('shadow-lg');
-                                            });
-                                            currentText?.classList.remove('hidden');
-                                            items[index].classList.add('shadow-lg');
-                                        }
-                                    }}
+                        return (
+                            <button
+                                type="button"
+                                key={index}
+                                aria-expanded={isOpen}
+                                className={`slider__item bg-white text-blue px-6 sm:px-[40px] rounded-lg cursor-pointer flex items-center text-left max-w-full h-[104px] transition-[gap,box-shadow] duration-500 ease-in-out hover:bg-opacity-90 ${
+                                    isOpen ? 'gap-6 sm:gap-8 shadow-lg' : 'gap-0'
+                                }`}
+                                onClick={() => toggleItem(index)}
+                            >
+                                <span className="text-[72px] font-bold shrink-0 leading-none">
+                                    {index + 1}
+                                </span>
+                                <span
+                                    className={`grid h-full items-center min-w-0 transition-[grid-template-columns,opacity] duration-500 ease-in-out ${
+                                        isOpen
+                                            ? 'grid-cols-[1fr] opacity-100'
+                                            : 'grid-cols-[0fr] opacity-0'
+                                    }`}
                                 >
-                                    <span className="text-[72px] font-bold">{index + 1}</span>
-                                    <p className={`slider__text text-[14px] max-[350px]:py-[10px] md:text-[16px] lg:text-[18px] transition-opacity duration-300 ${index === 0 ? '' : 'hidden'}`}>
-                                        {item}
-                                    </p>
-                                </div>
-                            )
-                        })
-                    }
+                                    <span className="overflow-hidden h-full flex items-center min-w-0">
+                                        <span className="block text-[14px] md:text-[16px] lg:text-[18px] whitespace-nowrap">
+                                            {item}
+                                        </span>
+                                    </span>
+                                </span>
+                            </button>
+                        )
+                    })}
                 </div>
             </div>
         </section>

@@ -5,10 +5,11 @@ WORKDIR /app
 # Копируем только необходимые файлы
 COPY package*.json ./
 COPY pnpm-lock.yaml ./
+COPY .npmrc ./
 
 # Устанавливаем pnpm и зависимости
-RUN npm install -g pnpm
-RUN pnpm install --no-frozen-lockfile
+RUN npm install -g pnpm@9
+RUN pnpm install --no-frozen-lockfile --config.trust-lockfile=true
 
 # Копируем только код бота и необходимые данные
 COPY scripts/telegram-news-bot.cjs ./scripts/

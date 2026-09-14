@@ -13,10 +13,6 @@ export const headerLinks: HeaderLink[] = [
         subhref: '/us-and-dalian',
       },
       {
-        subname: 'РИКК',
-        subhref: '/rikk',
-      },
-      {
         subname: 'Контакты',
         subhref: '/contacts',
       },
@@ -29,7 +25,7 @@ export const headerLinks: HeaderLink[] = [
         subhref: '/we-in-the-media',
       },
       {
-        subname: 'Идеологическая и воспит. работа↗',
+        subname: 'Идеологическая и воспит. работа',
         subhref: 'https://minsk.gov.by/ru/actual/view/209/2026.shtml',
         blank: true,
       },
@@ -71,21 +67,17 @@ export const headerLinks: HeaderLink[] = [
         subhref: '/schedule',
       },
       {
-        subname: 'Общежитие',
-        subhref: '/dorm',
-      },
-      {
-        subname: 'Наука ↗',
+        subname: 'Наука',
         subhref: 'https://conf.bsu.by/',
         blank: true,
       },
       {
-        subname: 'Академические обмены ↗',
+        subname: 'Академические обмены',
         subhref: 'https://ums.bsu.by/ru/mezhvuzovskoe-sotrudnichestvo',
         blank: true,
       },
       {
-        subname: 'Студенческие организации ↗',
+        subname: 'Студенческие организации',
         subhref:
           'https://bsu.by/studentam/vneuchebnaya-deyatelnost/studencheskie-organizatsii/',
         blank: true,

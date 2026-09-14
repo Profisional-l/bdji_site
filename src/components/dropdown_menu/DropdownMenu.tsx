@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 
 import { MenuProps } from '@/interfaces/popupMenuProps';
+import ExternalLinkIcon from '@/components/icons/ExternalLinkIcon';
 
 const DropdownMenu: React.FC<MenuProps> = ({ children, submenuItems }) => {
     const [isOpen, setIsOpen] = useState(false);
@@ -23,10 +24,13 @@ const DropdownMenu: React.FC<MenuProps> = ({ children, submenuItems }) => {
                             <li key={idx}>
                                 <Link
                                     href={submenuItem.subhref}
-                                    className="block px-4 w-full h-full hover:underline underline-offset-4"
+                                    className="flex items-center gap-1.5 px-4 w-full h-full hover:underline underline-offset-4"
                                     target={submenuItem.blank ? "_blank" : undefined}
                                     rel={submenuItem.blank ? "noopener noreferrer" : undefined}>
                                     {submenuItem.subname}
+                                    {submenuItem.blank && (
+                                        <ExternalLinkIcon className="shrink-0" />
+                                    )}
                                 </Link>
                             </li>
                         ))}

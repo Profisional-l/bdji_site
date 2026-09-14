@@ -11,10 +11,6 @@ export const footerLinks: FooterLink = {
       href: '/news',
     },
     {
-      name: 'Общежитие',
-      href: '/dorm',
-    },
-    {
       name: 'План приёма',
       href: '/admission-plan',
     },
