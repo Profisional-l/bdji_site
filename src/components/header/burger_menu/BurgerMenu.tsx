@@ -75,7 +75,7 @@ const BurgerMenu = () => {
                                 <span>БГУ и ДПУ</span>
                             </span>
                             <span>+375 (17) 209-53-72</span>
-                            <span>© 2025</span>
+                            <span>© {new Date().getFullYear()}</span>
                         </p>
                     </div>
                 </div>
