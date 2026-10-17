@@ -63,10 +63,6 @@ export const headerLinks: HeaderLink[] = [
     name: 'Студентам',
     submenu: [
       {
-        subname: 'График учебного процесса',
-        subhref: '/schedule',
-      },
-      {
         subname: 'Наука',
         subhref: 'https://conf.bsu.by/',
         blank: true,
@@ -89,7 +85,7 @@ export const headerLinks: HeaderLink[] = [
       {
         subname: 'СтудСовет СИБД',
         subhref: '/sibd_active',
-      }
+      },
     ],
   },
 ];
